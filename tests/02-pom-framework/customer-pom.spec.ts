@@ -73,7 +73,7 @@ test.describe('SmartBank - Customer Management Workflows', { tag: ['@smoke', '@r
     await expect(branchHeader).toBeVisible();
 
     await dashboardPage.clickLogout();
-    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: 'Fake button' })).toBeVisible();
   });
 
   // ==========================================================================
