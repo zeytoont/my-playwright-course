@@ -12,7 +12,9 @@ test.describe('SmartBank - Customer Management Workflows', { tag: ['@smoke', '@r
 
   // Serial execution: ensures these dependent tests run in order, one after another,
   // rather than Playwright potentially reordering or interleaving them
-  test.describe.configure({ mode: 'serial' });
+  // Commented out per assignment instructions (Phase 1, Step 4) — disabling serial mode
+  // allows tests to run in parallel/independently on the CI runner.
+  // test.describe.configure({ mode: 'serial' });
 
   // ==========================================================================
   // TEST 1: ADD CUSTOMER
