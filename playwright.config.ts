@@ -5,109 +5,88 @@ import { defineConfig, devices } from '@playwright/test';
 /* ========================================================================== */
 /**
  * BUILD_NUMBER: Change this version variable when a new build is deployed to QA.
- * Centralizing this at the top of your configuration prevents you from having to
- * manually hunt down and change URLs across dozens of different individual test files.
  */
-const BUILD_NUMBER = '3108';
+const BUILD_NUMBER = '3108'; 
 
 /**
- * Playwright Configuration File: Local Timing & Execution Control Blueprint
- * This file serves as the basis for Chapter 13.3, establishing the core timing
- * properties required to run stable automation suites locally.
+ * Playwright Configuration File: Cloud Pipeline & CI-Ready Setup
+ * This file dynamically scales its performance and robustness depending on
+ * whether it detects a local developer environment or a remote CI container.
  */
 export default defineConfig({
   /* ========================================================================== */
   /* 1. STRUCTURAL & DIRECTORY MANAGEMENT                                       */
   /* ========================================================================== */
 
-  /**
-   * testDir: Maps the primary location where Playwright scans for test files.
-   * Enforces code organization by separating test scripts from Page Objects.
-   */
   testDir: './tests',
 
-  /* Run tests in files in parallel across available local CPU cores */
+  /* Run tests in files in parallel across available CPU cores */
   fullyParallel: true,
 
-  /* Fail the build if a developer accidentally leaves 'test.only' in the code */
-  forbidOnly: false, // 💡 Note: Will be automated using process.env.CI in the CI/CD chapter
-
-  /* ========================================================================== */
-  /* 2. TIMING, TIMEOUTS, AND RETRIES (CORE CHAPTER 13.3)                       */
-  /* ========================================================================== */
-
   /**
-   * timeout: The Global Test Timeout (The Outer Box).
-   * Sets the absolute maximum limit for an entire single test block (in milliseconds).
-   * If exceeded, the test runner triggers a hard kill switch.
+   * forbidOnly: Fails the build if 'test.only' is accidentally left in code.
+   * On CI, this ensures developers don't accidentally skip the entire suite.
    */
+  forbidOnly: !!process.env.CI, 
+
+  /* ========================================================================== */
+  /* 2. ADAPTIVE TIMING, TIMEOUTS, AND RETRIES (THE CI UPGRADE)                 */
+  /* ========================================================================== */
+
+  /* Global Test Timeout: Absolute master switch limit for a single test block */
   timeout: 30000, // 30 seconds
 
   /**
-   * retries: Isolates structural test flakiness.
-   * Sets the number of times Playwright immediately re-runs a failed test file.
-   * Hardcoded to 1 here so students can observe the "Flaky" status locally.
+   * retries: Aggressive retry tracking.
+   * If on CI, retry 2 times to filter out cloud network drops.
+   * If running locally, retry only 1 time for rapid debugging.
    */
-  retries: 1, // 💡 Hardcoded for local mastery: Replaces "process.env.CI ? 2 : 0" for this chapter
+  retries: process.env.CI ? 2 : 1,
 
   /**
-   * workers: Sets the number of concurrent execution threads.
-   * Passing 'undefined' tells Playwright to automatically optimize speed by
-   * leveraging all available local CPU cores.
+   * workers: Concurrency and memory bottleneck management.
+   * If on CI, force a single worker (1) to prevent Out-Of-Memory server crashes.
+   * If running locally, use 'undefined' to exploit all computer CPU cores.
    */
-  workers: undefined, // 💡 Hardcoded for local mastery: Replaces "process.env.CI ? 1 : undefined"
+  workers: process.env.CI ? 1 : undefined,
 
   /* ========================================================================== */
   /* 3. ASSERTION LEVEL TIMEOUTS                                                */
   /* ========================================================================== */
   expect: {
-    /**
-     * timeout: Expect Assertion Timeout.
-     * The maximum time a Web-First Assertion (e.g., expect(locator).toBeVisible())
-     * will poll the DOM before throwing an error. Uses intelligent micro-polling.
-     */
-    timeout: 5000, // 5 seconds (Default value, explicitly declared for student clarity)
+    /* Maximum time Web-First Assertions poll the DOM before throwing an error */
+    timeout: 5000, 
   },
 
-  /* Reporter to use. Generates a local interactive browser dashboard. */
+  /* Reporter to use. Generates an asset dashboard for local or server review */
   reporter: 'html',
 
   /* ========================================================================== */
   /* 4. ACTION & INTERACTION TIMEOUTS                                           */
   /* ========================================================================== */
   use: {
-    /**
-     * baseURL: Base URL to use in actions like `await page.goto('/')`.
-     * Dynamically appends the centralized build number variable, resolving to
-     * 'https://qa.hitekschool.com/lms/3108/'.
-     */
-    baseURL: `https://qa.hitekschool.com/lms/${BUILD_NUMBER}/`,
+    /* Base URL pointed to your school LMS environment */
+    baseURL: `https://qa.hitekschool.com/lms/`,
 
-    /**
-     * actionTimeout: Maximum time allowed for individual explicit browser steps.
-     * Examples: await page.click(), await page.fill(), await page.hover().
-     * If an element is blocked or slow to render, the step waits up to this limit.
-     */
-    actionTimeout: 10000, // 10 seconds (Upgraded from the default '0' no-limit boundary)
+    /* Maximum time allowed for individual explicit steps (clicks, fills) */
+    actionTimeout: 10000, // 10 seconds 
 
-    /**
-     * navigationTimeout: Maximum time allowed for explicit page loading events.
-     * Examples: await page.goto(), await page.waitForURL().
-     */
+    /* Maximum time allowed for explicit page loading and route events */
     navigationTimeout: 15000, // 15 seconds
 
-    /* Collect trace when retrying a failed test to capture logs and snapshots */
+    /**
+     * trace: Collect trace viewer files for structural analysis.
+     * On CI, save space by tracing only on the first retry of a failing test.
+     * Locally, developers can adjust this behavior as needed.
+     */
     trace: 'on-first-retry',
-
-    /* Capture visual test evidence automatically on failures */
+    
+    /* Capture visual evidence automatically to review errors in server logs */
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-
-    /* Use a large, fixed viewport so tests run consistently regardless of your screen size */
-    viewport: { width: 1920, height: 1080 },
   },
 
-  /* Configure projects for major browsers to ensure cross-browser test coverage */
+  /* Configure projects for major cross-browser testing across environments */
   projects: [
     {
       name: 'chromium',
