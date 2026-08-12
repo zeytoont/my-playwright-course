@@ -1,4 +1,4 @@
-# 1. The name of the automation pipeline displayed in the GitHub user interface
+# 1. The name of the automation pipeline displayed in the GitHub UI
 name: Playwright Regression Suite
 
 # 2. TRIGGERS: Define what events start the pipeline automatically
@@ -7,6 +7,13 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  
+  # ⏰ SCHEDULED TRIGGER: Runs automatically every single night at midnight UTC
+  schedule:
+    - cron: '0 0 * * *'
+
+  # ⚙️ MANUAL TRIGGER: Enables the "Run workflow" button inside the GitHub UI
+  workflow_dispatch:
 
 # 3. ENVIRONMENT: Provision the cloud machine architecture
 jobs:
@@ -30,16 +37,24 @@ jobs:
     - name: Install Playwright System Dependencies & Browsers
       run: npx playwright install --with-deps
 
+    # 🚀 SMART CONDITIONAL RUNNER WITH INFRASTRUCTURE SAFEGUARDS
     - name: Execute Playwright Automation Tests
-      run: npx playwright test
+      run: |
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "Pull Request Quality Gate detected: Executing fast Smoke suite..."
+          npm run test:smoke -- --workers=1
+        else
+          echo "Scheduled, push, or manual run detected: Executing full Regression suite..."
+          npm run test:regression -- --workers=1
+        fi
 
-        # 💡 NEW CLOUD RETENTION STEP ADDED BELOW
+    # 🧹 AUTOMATED STORAGE CLEANUP (ARTIFACT RETENTION)
     - name: Upload Test Evidence and HTML Reports
       uses: actions/upload-artifact@v4
-      if: always() # ⚠️ THE CRITICAL CONDITION SWITCH
+      if: always() # ⚠️ THE CRITICAL CONDITION SWITCH: Runs even if tests fail!
       with:
         name: playwright-execution-evidence
         path: |
           playwright-report/
           test-results/
-        retention-days: 5  # 🧹 Automatically deletes old videos and reports after 5 days
+        retention-days: 5 # 🗑️ Automatically purges old evidence files after 5 days
